@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}History - LEI Lookup Tool{% endblock %}
+
+{% block content %}
+<h1>Lookup History</h1>
+
+{% if jobs %}
+<div class="table-wrapper">
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th scope="col">File</th>
+                <th scope="col">Entities</th>
+                <th scope="col">Status</th>
+                <th scope="col">Created</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr>
+                <td>{{ job.filename }}</td>
+                <td>{{ job.entities | length }}</td>
+                <td>
+                    <span class="badge badge-{{ job.status }}">{{ job.status }}</span>
+                </td>
+                <td class="timestamp" data-ts="{{ job.created_at }}"></td>
+                <td>
+                    <a href="/results/{{ job.id }}" class="btn btn-small">View</a>
+                    {% if job.status == 'complete' %}
+                    <a href="/download/{{ job.id }}?format=xlsx" class="btn btn-small" title="Download Excel">Download</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No lookups yet. <a href="/">Start a new lookup</a>.</p>
+</div>
+{% endif %}
+{% endblock %}

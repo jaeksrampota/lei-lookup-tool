@@ -7,4 +7,9 @@ dist/
 build/
 .env
 results.xlsx
+data/lei_lookup.db
+tests/_test_*.db
+.coverage
+_batch_*.json
+_push_script.js
 .claude/

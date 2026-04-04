@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from typing import Optional
 
 import httpx
@@ -15,6 +16,11 @@ GLEIF_API_BASE = "https://api.gleif.org/api/v1"
 DEFAULT_TIMEOUT = 30.0
 MAX_RETRIES = 3
 INITIAL_BACKOFF = 1.0
+
+
+class GleifApiError(Exception):
+    """Raised when the GLEIF API is unreachable after all retries."""
+    pass
 
 
 def _parse_address(data: dict) -> GleifAddress:
@@ -74,6 +80,12 @@ class GleifClient:
         self._timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
@@ -95,17 +107,20 @@ class GleifClient:
 
         client = await self._get_client()
         backoff = INITIAL_BACKOFF
+        t0 = time.monotonic()
 
         for attempt in range(MAX_RETRIES):
             try:
                 resp = await client.get(path, params=params)
                 if resp.status_code == 429:
-                    logger.warning("GLEIF rate limited, retrying in %.1fs", backoff)
+                    logger.warning("GLEIF rate limited, retrying in %.1fs (attempt %d/%d)", backoff, attempt + 1, MAX_RETRIES)
                     await asyncio.sleep(backoff)
                     backoff *= 2
                     continue
                 resp.raise_for_status()
                 data = resp.json()
+                elapsed = time.monotonic() - t0
+                logger.debug("GLEIF %s took %.2fs (%d results)", path, elapsed, len(data.get("data", [])))
                 cache.set("gleif", {"path": path, **params}, data)
                 return data
             except httpx.HTTPStatusError as e:
@@ -114,14 +129,16 @@ class GleifClient:
                     backoff *= 2
                     continue
                 raise
-            except httpx.TransportError:
+            except httpx.TransportError as e:
                 if attempt < MAX_RETRIES - 1:
+                    logger.warning("GLEIF transport error: %s, retrying in %.1fs", e, backoff)
                     await asyncio.sleep(backoff)
                     backoff *= 2
                     continue
                 raise
 
-        return {"data": []}
+        elapsed = time.monotonic() - t0
+        raise GleifApiError(f"GLEIF API unreachable after {MAX_RETRIES} retries ({elapsed:.1f}s)")
 
     async def search_by_name(
         self, name: str, country: Optional[str] = None, page_size: int = 10

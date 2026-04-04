@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LEI Lookup Tool{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <header>
+        <nav aria-label="Main navigation">
+            <div class="nav-container">
+                <a href="/" class="nav-brand">LEI Lookup Tool</a>
+                <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+                <ul class="nav-links">
+                    <li><a href="/" {% if request.url.path == "/" %}aria-current="page"{% endif %}>Lookup</a></li>
+                    <li><a href="/history" {% if request.url.path == "/history" %}aria-current="page"{% endif %}>History</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main id="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>LEI Lookup Tool &mdash; Powered by <a href="https://www.gleif.org/" target="_blank" rel="noopener">GLEIF API</a></p>
+        </div>
+    </footer>
+
+    <div id="toast-container" aria-live="polite"></div>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

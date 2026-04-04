@@ -98,6 +98,30 @@ def _gleif_country(candidate: GleifCandidate, addr_type: str) -> Optional[str]:
     return addr.country if addr else None
 
 
+def _gleif_zip(candidate: GleifCandidate, addr_type: str) -> Optional[str]:
+    addr = candidate.legal_address if addr_type == "legal" else candidate.hq_address
+    return addr.postal_code if addr else None
+
+
+def zip_similarity(input_zip: Optional[str], gleif_zip: Optional[str]) -> float:
+    """Compare ZIP codes after normalization. Returns 0 or 100."""
+    z1 = extract_zip(input_zip)
+    z2 = extract_zip(gleif_zip)
+
+    if not z1 or not z2:
+        return 0.0
+
+    # Exact match after normalization
+    if z1 == z2:
+        return 100.0
+
+    # One is a prefix of the other (e.g. "1010" vs "1010 Wien")
+    if z1.startswith(z2) or z2.startswith(z1):
+        return 80.0
+
+    return 0.0
+
+
 def address_match_score(
     entity: InputEntity, candidate: GleifCandidate, addr_type: str
 ) -> tuple[float, dict]:
@@ -124,14 +148,20 @@ def address_match_score(
 
     city_score = city_similarity(entity.town, _gleif_city(candidate, addr_type))
     street_score = street_similarity(entity.street, _gleif_street(candidate, addr_type))
+    z_score = zip_similarity(entity.zip_code, _gleif_zip(candidate, addr_type))
 
-    # Weighted combination: country is pass/fail above, city and street matter most
-    overall = city_score * 0.5 + street_score * 0.5
+    # Weighted combination: country is pass/fail above; city, street, zip matter
+    if z_score > 0:
+        overall = city_score * 0.40 + street_score * 0.35 + z_score * 0.25
+    else:
+        # No ZIP data available — fall back to city+street only
+        overall = city_score * 0.5 + street_score * 0.5
 
     details = {
         "country_match": input_country == gleif_country if (input_country and gleif_country) else None,
         "city_score": city_score,
         "street_score": street_score,
+        "zip_score": z_score,
         "overall": overall,
     }
 

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}LEI Lookup Tool{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>LEI Lookup Tool</h1>
+    <p class="subtitle">Search for Legal Entity Identifiers via the GLEIF database</p>
+</div>
+
+<div class="two-column">
+    {# ---- Single Lookup Form ---- #}
+    <section class="card" aria-labelledby="lookup-heading">
+        <h2 id="lookup-heading">Single Entity Lookup</h2>
+
+        {% if error %}
+        <div class="alert alert-error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form id="lookup-form" method="post" action="/lookup">
+            <div class="form-group">
+                <label for="name">Entity Name <span class="required" aria-label="required">*</span></label>
+                <input type="text" id="name" name="name" required
+                       placeholder="e.g. CAIAC Fund Management AG"
+                       value="{{ form.name if form else '' }}"
+                       autocomplete="organization">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="country">Country</label>
+                    <input type="text" id="country" name="country" list="country-list"
+                           placeholder="e.g. Česká republika"
+                           value="{{ form.country if form else '' }}">
+                    <datalist id="country-list"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="isin">ISIN</label>
+                    <input type="text" id="isin" name="isin"
+                           placeholder="e.g. CZ0009010468"
+                           value="{{ form.isin if form else '' }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="street">Street</label>
+                    <input type="text" id="street" name="street"
+                           placeholder="e.g. Kotrčova 304/2"
+                           value="{{ form.street if form else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="town">Town</label>
+                    <input type="text" id="town" name="town"
+                           placeholder="e.g. Praha"
+                           value="{{ form.town if form else '' }}">
+                </div>
+            </div>
+            <div class="form-group" style="max-width:200px">
+                <label for="zip_code">ZIP Code</label>
+                <input type="text" id="zip_code" name="zip_code"
+                       placeholder="e.g. 50301"
+                       value="{{ form.zip_code if form else '' }}">
+            </div>
+            <button type="submit" class="btn btn-primary" id="lookup-submit">
+                <span class="btn-text">Search LEI</span>
+                <span class="spinner" hidden aria-hidden="true"></span>
+            </button>
+        </form>
+
+        {# ---- Lookup Result ---- #}
+        {% if result %}
+        <div class="result-card" id="lookup-result">
+            <h3>Result</h3>
+            <div class="result-grid">
+                <div class="result-item">
+                    <span class="result-label">LEI</span>
+                    <span class="result-value lei-value">{{ result.lei or 'NOT FOUND' }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Status</span>
+                    <span class="result-value">{{ result.lei_status or 'N/A' }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Match Type</span>
+                    <span class="badge badge-{{ result.match_type.value | lower }}">{{ result.match_type.value }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Confidence</span>
+                    <span class="confidence confidence-{{ 'high' if result.confidence >= 85 else ('medium' if result.confidence >= 65 else 'low') }}">
+                        {{ "%.1f" | format(result.confidence) }}%
+                    </span>
+                </div>
+                {% if result.gleif_legal_name %}
+                <div class="result-item full-width">
+                    <span class="result-label">GLEIF Legal Name</span>
+                    <span class="result-value">{{ result.gleif_legal_name }}</span>
+                </div>
+                {% endif %}
+                {% if result.gleif_legal_address %}
+                <div class="result-item full-width">
+                    <span class="result-label">Legal Address</span>
+                    <span class="result-value">{{ result.gleif_legal_address }}</span>
+                </div>
+                {% endif %}
+                {% if result.gleif_hq_address %}
+                <div class="result-item full-width">
+                    <span class="result-label">HQ Address</span>
+                    <span class="result-value">{{ result.gleif_hq_address }}</span>
+                </div>
+                {% endif %}
+                <div class="result-item full-width">
+                    <span class="result-label">Notes</span>
+                    <span class="result-value notes">{{ result.notes }}</span>
+                </div>
+            </div>
+            {% if job_id %}
+            <div class="download-bar">
+                <a href="/download/{{ job_id }}?format=xlsx" class="btn btn-small" title="Download as Excel">Excel</a>
+                <a href="/download/{{ job_id }}?format=csv" class="btn btn-small" title="Download as CSV">CSV</a>
+                <a href="/download/{{ job_id }}?format=json" class="btn btn-small" title="Download as JSON">JSON</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+
+    {# ---- Batch Upload ---- #}
+    <section class="card" aria-labelledby="upload-heading">
+        <h2 id="upload-heading">Batch Upload</h2>
+        <p>Upload a file with multiple entities for bulk lookup.</p>
+
+        {% if upload_error %}
+        <div class="alert alert-error" role="alert">{{ upload_error }}</div>
+        {% endif %}
+
+        <form id="upload-form" method="post" action="/upload" enctype="multipart/form-data">
+            <div class="drop-zone" id="drop-zone" role="button" aria-label="Drop zone for file upload" tabindex="0">
+                <div class="drop-zone-content">
+                    <svg class="drop-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    <p>Drop <strong>.xlsx</strong>, <strong>.csv</strong>, or <strong>.docx</strong> here</p>
+                    <p class="drop-hint">or click to browse</p>
+                </div>
+                <input type="file" id="file-input" name="file"
+                       accept=".xlsx,.csv,.docx"
+                       aria-label="Choose file to upload">
+            </div>
+            <div class="file-info" id="file-info" hidden>
+                <span id="file-name"></span>
+                <button type="button" id="file-clear" class="btn-icon" aria-label="Remove selected file">&times;</button>
+            </div>
+            <button type="submit" class="btn btn-primary" id="upload-submit" disabled>
+                Upload &amp; Process
+            </button>
+        </form>
+
+        <div class="upload-formats">
+            <h3>Supported Formats</h3>
+            <ul>
+                <li><strong>Excel (.xlsx)</strong> &mdash; 6 columns: Name, ISIN, Street, Town, Country, ZIP</li>
+                <li><strong>CSV (.csv)</strong> &mdash; Same columns, comma or semicolon delimited</li>
+                <li><strong>Word (.docx)</strong> &mdash; Table with entity data or one name per line</li>
+            </ul>
+        </div>
+    </section>
+</div>
+{% endblock %}

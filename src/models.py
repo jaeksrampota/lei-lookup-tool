@@ -17,12 +17,12 @@ class MatchType(str, Enum):
 class InputEntity(BaseModel):
     """Entity from the input Excel file."""
 
-    name: str
-    isin: Optional[str] = None
-    street: Optional[str] = None
-    town: Optional[str] = None
-    country: Optional[str] = None  # Czech name, needs conversion to ISO
-    zip_code: Optional[str] = None
+    name: str = Field(..., max_length=500)
+    isin: Optional[str] = Field(None, max_length=20)
+    street: Optional[str] = Field(None, max_length=500)
+    town: Optional[str] = Field(None, max_length=200)
+    country: Optional[str] = Field(None, max_length=200)  # Czech name, needs conversion to ISO
+    zip_code: Optional[str] = Field(None, max_length=20)
 
 
 class GleifAddress(BaseModel):

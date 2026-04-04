@@ -9,7 +9,7 @@ from typing import Optional
 
 from .address import country_to_iso, normalize_name
 from .batch import read_input_xlsx, write_output_xlsx
-from .gleif_client import GleifClient
+from .gleif_client import GleifApiError, GleifClient
 from .isin_resolver import resolve_via_isin
 from .matcher import (
     NAME_MATCH_THRESHOLD,
@@ -38,12 +38,19 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
     iso_country = country_to_iso(entity.country)
 
     # Step 1: Search GLEIF by name
-    candidates = await client.search_by_name(entity.name, country=iso_country)
+    try:
+        candidates = await client.search_by_name(entity.name, country=iso_country)
 
-    # If no results with country filter, try without
-    if not candidates and iso_country:
-        logger.info("No results with country filter, trying without...")
-        candidates = await client.search_by_name_no_country(entity.name)
+        # If no results with country filter, try without
+        if not candidates and iso_country:
+            logger.info("No results with country filter, trying without...")
+            candidates = await client.search_by_name_no_country(entity.name)
+    except GleifApiError as e:
+        logger.error("GLEIF API unavailable for %s: %s", entity.name, e)
+        return LookupResult(
+            match_type=MatchType.NO_MATCH,
+            notes=f"Chyba při komunikaci s GLEIF API: služba nedostupná po opakovaných pokusech.",
+        )
 
     if not candidates:
         logger.info("No GLEIF candidates found for %s", entity.name)
