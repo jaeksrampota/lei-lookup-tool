@@ -4,10 +4,9 @@ import argparse
 import asyncio
 import logging
 import sys
-from pathlib import Path
 from typing import Optional
 
-from .address import country_to_iso, normalize_name
+from .address import country_to_iso
 from .batch import read_input_xlsx, write_output_xlsx
 from .gleif_client import GleifApiError, GleifClient
 from .isin_resolver import resolve_via_isin

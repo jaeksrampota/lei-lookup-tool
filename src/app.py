@@ -67,10 +67,6 @@ class Job:
 # In-memory dict for SSE queues and active processing (ephemeral)
 _active_jobs: dict[str, Job] = {}
 
-# Legacy alias so tests that import `jobs` still work during transition
-jobs = _active_jobs
-
-
 def _job_from_db(row: dict) -> Job:
     """Reconstruct a Job from a database row dict."""
     job = Job(

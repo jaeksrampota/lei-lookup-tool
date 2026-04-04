@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 
 class MatchType(str, Enum):
     FULL_MATCH = "FULL_MATCH"
-    HQ_MATCH = "HQ_MATCH"
     ISIN_MATCH = "ISIN_MATCH"
     ISIN_GLEIF_MATCH = "ISIN_GLEIF_MATCH"
     NO_MATCH = "NO_MATCH"

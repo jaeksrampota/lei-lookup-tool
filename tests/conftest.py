@@ -34,11 +34,6 @@ def sample_docx():
 
 
 @pytest.fixture
-def empty_csv():
-    return FIXTURES_DIR / "empty.csv"
-
-
-@pytest.fixture
 def sample_semicolon_csv():
     return FIXTURES_DIR / "sample_semicolon.csv"
 

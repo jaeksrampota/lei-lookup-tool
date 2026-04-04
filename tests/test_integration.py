@@ -28,7 +28,7 @@ EXPECTED = [
     # Row 5: Avenue Therapeutics Inc - NO_MATCH (HQ only, LAPSED)
     (4, MatchType.NO_MATCH, None),
     # Row 6: Morgan Stanley Direct Lending Fund - ISIN_MATCH (9)
-    (5, {MatchType.ISIN_MATCH, MatchType.ISIN_GLEIF_MATCH, MatchType.HQ_MATCH}, "549300QEX22T2J8IB029"),
+    (5, {MatchType.ISIN_MATCH, MatchType.ISIN_GLEIF_MATCH}, "549300QEX22T2J8IB029"),
     # Row 7: Polar Capital LLP - FULL_MATCH
     (6, MatchType.FULL_MATCH, "4YW3JKTZ3K1II2GVCK15"),
     # Row 8: Simplea Euro Bond Opportunity - FULL_MATCH
@@ -103,7 +103,7 @@ async def test_entity_lookup(entities, client, row_idx, expected_type, expected_
     else:
         # For NO_MATCH, LEI should be None or the match type should indicate low confidence
         if expected_type == MatchType.NO_MATCH:
-            # Allow HQ_MATCH with low confidence as acceptable (edge cases)
+            # Allow unexpected match type with low confidence as acceptable (edge cases)
             if result.match_type != MatchType.NO_MATCH:
                 assert result.confidence < 75, (
                     f"{entity.name}: expected NO_MATCH but got {result.match_type.value} "

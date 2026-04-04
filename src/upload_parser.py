@@ -1,6 +1,5 @@
 """Parse uploaded files (CSV, XLSX, DOCX) into InputEntity lists."""
 
-import csv
 import io
 import logging
 from pathlib import Path

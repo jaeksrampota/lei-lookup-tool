@@ -166,24 +166,3 @@ def address_match_score(
     }
 
     return overall, details
-
-
-def compute_confidence(
-    name_score: float,
-    address_score: float,
-    addr_type: str,
-    is_isin_match: bool = False,
-) -> float:
-    """Compute final confidence score based on name and address match."""
-    if addr_type == "legal":
-        # FULL_MATCH: weight name 30%, address 70%
-        base = name_score * 0.3 + address_score * 0.7
-        return min(max(base, 0), 100)
-    elif addr_type == "hq":
-        # HQ_MATCH: lower confidence
-        base = name_score * 0.3 + address_score * 0.7
-        return min(max(base * 0.7, 0), 100)  # Scale down by 30%
-    elif is_isin_match:
-        return min(max(address_score * 0.4 + name_score * 0.3 + 30, 0), 100)
-    else:
-        return 0.0
