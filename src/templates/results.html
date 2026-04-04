@@ -43,6 +43,9 @@
     <a href="/download/{{ job.id }}?format=xlsx" class="btn btn-small" title="Download as Excel">Excel (.xlsx)</a>
     <a href="/download/{{ job.id }}?format=csv" class="btn btn-small" title="Download as CSV">CSV</a>
     <a href="/download/{{ job.id }}?format=json" class="btn btn-small" title="Download as JSON">JSON</a>
+    {% if match_counts.get('NO_MATCH', 0) > 0 %}
+    <a href="/download/{{ job.id }}?format=xlsx&filter=unmatched" class="btn btn-small btn-outline" title="Download unmatched entities only">Unmatched only (.xlsx)</a>
+    {% endif %}
 </div>
 
 {# ---- Filter/Search ---- #}
@@ -70,10 +73,11 @@
             <tr>
                 <td>{{ loop.index }}</td>
                 <td class="name-cell">{{ entity.name }}</td>
-                <td class="lei-cell">{{ result.lei or '' }}</td>
+                <td class="lei-cell">{{ result.lei or '' }}{% if result.lei %} <button class="btn-copy" data-lei="{{ result.lei }}" title="Copy LEI">&#x1f4cb;</button>{% endif %}</td>
                 <td>{{ result.lei_status or '' }}</td>
                 <td><span class="badge badge-{{ result.match_type.value | lower }}">{{ result.match_type.value }}</span></td>
-                <td class="confidence-cell confidence-{{ 'high' if result.confidence >= 85 else ('medium' if result.confidence >= 65 else 'low') }}">
+                <td class="confidence-cell confidence-{{ 'high' if result.confidence >= 85 else ('medium' if result.confidence >= 65 else 'low') }}"
+                    {% if result.match_details %}title="Name: {{ result.match_details.name_score }}%, City: {{ result.match_details.city_score }}%, Street: {{ result.match_details.street_score }}%, ZIP: {{ result.match_details.zip_score }}%"{% endif %}>
                     {{ "%.1f" | format(result.confidence) }}%
                 </td>
                 <td>{{ result.gleif_legal_name or '' }}</td>

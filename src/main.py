@@ -92,6 +92,12 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
                 gleif_legal_address=candidate.legal_address.format() if candidate.legal_address else None,
                 gleif_hq_address=candidate.hq_address.format() if candidate.hq_address else None,
                 notes="Plná shoda názvu a legal address.",
+                match_details={
+                    "name_score": round(ns, 1),
+                    "city_score": round(legal_details.get("city_score", 0), 1),
+                    "street_score": round(legal_details.get("street_score", 0), 1),
+                    "zip_score": round(legal_details.get("zip_score", 0), 1),
+                },
             )
             if best_full_match is None or confidence > best_full_match.confidence:
                 best_full_match = result

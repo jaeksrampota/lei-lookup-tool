@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
     initDropZone();
     initFileInput();
     initLookupForm();
+    initPasteArea();
+    initCopyButtons();
     initTableFilter();
     initSortableColumns();
     initTimestamps();
@@ -146,12 +148,23 @@ function connectProgress(jobId, totalEntities) {
     var tbody = document.getElementById('results-tbody');
 
     var startTime = Date.now();
+    var resultTimestamps = [];
     var timerInterval = setInterval(function () {
         var elapsed = Math.floor((Date.now() - startTime) / 1000);
         var min = Math.floor(elapsed / 60);
         var sec = elapsed % 60;
+        var etaStr = '';
+        if (resultTimestamps.length >= 2) {
+            var avgMs = (resultTimestamps[resultTimestamps.length - 1] - resultTimestamps[0]) / (resultTimestamps.length - 1);
+            var remaining = Math.max(0, (totalEntities - resultTimestamps.length) * avgMs / 1000);
+            var rm = Math.floor(remaining / 60);
+            var rs = Math.floor(remaining % 60);
+            etaStr = ' \u00b7 ~' + (rm > 0 ? rm + 'm ' : '') + rs + 's remaining';
+        } else if (resultTimestamps.length > 0) {
+            etaStr = ' \u00b7 Calculating...';
+        }
         if (progressTime) {
-            progressTime.textContent = (min > 0 ? min + 'm ' : '') + sec + 's';
+            progressTime.textContent = (min > 0 ? min + 'm ' : '') + sec + 's' + etaStr;
         }
     }, 1000);
 
@@ -170,6 +183,7 @@ function connectProgress(jobId, totalEntities) {
         }
 
         if (data.type === 'result') {
+            resultTimestamps.push(Date.now());
             /* Add row to table */
             var tr = document.createElement('tr');
             tr.innerHTML =
@@ -291,6 +305,32 @@ function showToast(message, type) {
         toast.style.transition = '0.3s ease';
         setTimeout(function () { toast.remove(); }, 300);
     }, 4000);
+}
+
+/* ===== Paste Area ===== */
+function initPasteArea() {
+    var textarea = document.getElementById('paste-text');
+    var btn = document.getElementById('paste-submit');
+    if (!textarea || !btn) return;
+
+    textarea.addEventListener('input', function () {
+        btn.disabled = !textarea.value.trim();
+    });
+}
+
+/* ===== Copy LEI Buttons ===== */
+function initCopyButtons() {
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-copy');
+        if (!btn) return;
+        var lei = btn.getAttribute('data-lei');
+        if (!lei) return;
+        navigator.clipboard.writeText(lei).then(function () {
+            showToast('Copied: ' + lei, 'success');
+        }).catch(function () {
+            showToast('Copy failed', 'error');
+        });
+    });
 }
 
 /* ===== Utilities ===== */

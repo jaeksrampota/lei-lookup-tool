@@ -73,7 +73,7 @@
             <div class="result-grid">
                 <div class="result-item">
                     <span class="result-label">LEI</span>
-                    <span class="result-value lei-value">{{ result.lei or 'NOT FOUND' }}</span>
+                    <span class="result-value lei-value">{{ result.lei or 'NOT FOUND' }}{% if result.lei %} <button class="btn-copy" data-lei="{{ result.lei }}" title="Copy LEI to clipboard">&#x1f4cb;</button>{% endif %}</span>
                 </div>
                 <div class="result-item">
                     <span class="result-label">Status</span>
@@ -85,8 +85,12 @@
                 </div>
                 <div class="result-item">
                     <span class="result-label">Confidence</span>
-                    <span class="confidence confidence-{{ 'high' if result.confidence >= 85 else ('medium' if result.confidence >= 65 else 'low') }}">
+                    <span class="confidence confidence-{{ 'high' if result.confidence >= 85 else ('medium' if result.confidence >= 65 else 'low') }}"
+                          {% if result.match_details %}title="Name: {{ result.match_details.name_score }}%, City: {{ result.match_details.city_score }}%, Street: {{ result.match_details.street_score }}%, ZIP: {{ result.match_details.zip_score }}%"{% endif %}>
                         {{ "%.1f" | format(result.confidence) }}%
+                        {% if result.match_details %}
+                        <span class="breakdown">N:{{ result.match_details.name_score|int }} C:{{ result.match_details.city_score|int }} S:{{ result.match_details.street_score|int }} Z:{{ result.match_details.zip_score|int }}</span>
+                        {% endif %}
                     </span>
                 </div>
                 {% if result.gleif_legal_name %}
@@ -162,6 +166,20 @@
                 <li><strong>Word (.docx)</strong> &mdash; Table with entity data or one name per line</li>
             </ul>
         </div>
+
+        <hr class="divider">
+
+        <h3 id="paste-heading">Quick Paste</h3>
+        <p>Paste entity names directly (one per line). Use tabs to add columns: Name, ISIN, Street, Town, Country, ZIP.</p>
+        <form id="paste-form" method="post" action="/paste">
+            <div class="form-group">
+                <textarea id="paste-text" name="paste_text" rows="6"
+                          placeholder="CAIAC Fund Management AG&#10;Polar Capital LLP&#10;Morgan Stanley Direct Lending Fund"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" id="paste-submit" disabled>
+                Lookup Pasted Entities
+            </button>
+        </form>
     </section>
 </div>
 {% endblock %}

@@ -833,6 +833,70 @@ footer a:hover {
     outline: none;
 }
 
+/* ===== Copy LEI Button ===== */
+.btn-copy {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 4px;
+    border-radius: 3px;
+    vertical-align: middle;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+.btn-copy:hover {
+    opacity: 1;
+    background: var(--color-bg);
+}
+
+/* ===== Confidence Breakdown Tooltip ===== */
+.breakdown {
+    display: none;
+    font-size: 0.7rem;
+    color: #666;
+    white-space: nowrap;
+}
+.confidence-cell:hover .breakdown,
+.confidence:hover .breakdown {
+    display: inline;
+    margin-left: 4px;
+}
+
+/* ===== Outline Button Variant ===== */
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+}
+.btn-outline:hover {
+    background: var(--color-accent);
+    color: #fff;
+}
+
+/* ===== Paste Area ===== */
+.divider {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 24px 0;
+}
+
+#paste-text {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+#paste-text:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
 /* ===== Print ===== */
 @media print {
     header, footer, .drop-zone, .download-toolbar, .download-bar,

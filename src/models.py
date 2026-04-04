@@ -68,3 +68,4 @@ class LookupResult(BaseModel):
     gleif_legal_address: Optional[str] = None
     gleif_hq_address: Optional[str] = None
     notes: str = ""
+    match_details: Optional[dict] = None

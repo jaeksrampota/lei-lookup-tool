@@ -8,6 +8,7 @@ build/
 .env
 results.xlsx
 data/lei_lookup.db
+data/cache.db
 tests/_test_*.db
 .coverage
 _batch_*.json

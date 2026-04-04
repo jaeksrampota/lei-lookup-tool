@@ -218,6 +218,9 @@ async def _process_job(job: Job):
     await db.update_job_status(job.id, "processing")
     client = GleifClient()
 
+    # Duplicate detection: cache results by (name, isin) to avoid redundant API calls
+    seen: dict[tuple, tuple[int, LookupResult]] = {}
+
     try:
         for i, entity in enumerate(job.entities):
             job.progress = i
@@ -229,20 +232,28 @@ async def _process_job(job: Job):
             }
             _broadcast(job, event)
 
-            try:
-                result = await lookup_entity(entity, client)
-            except GleifApiError:
-                logger.exception("GLEIF API error for entity %s", entity.name)
-                result = LookupResult(
-                    match_type=MatchType.NO_MATCH,
-                    notes="Chyba při komunikaci s GLEIF API: služba nedostupná.",
-                )
-            except Exception:
-                logger.exception("Error processing entity %s", entity.name)
-                result = LookupResult(
-                    match_type=MatchType.NO_MATCH,
-                    notes="Neočekávaná chyba při vyhledávání.",
-                )
+            dedup_key = (entity.name.lower().strip(), entity.isin or "")
+            if dedup_key in seen:
+                orig_idx, orig_result = seen[dedup_key]
+                result = orig_result.model_copy(update={
+                    "notes": f"Duplicitní záznam — výsledek převzat z řádku {orig_idx + 1}.",
+                })
+            else:
+                try:
+                    result = await lookup_entity(entity, client)
+                except GleifApiError:
+                    logger.exception("GLEIF API error for entity %s", entity.name)
+                    result = LookupResult(
+                        match_type=MatchType.NO_MATCH,
+                        notes="Chyba při komunikaci s GLEIF API: služba nedostupná.",
+                    )
+                except Exception:
+                    logger.exception("Error processing entity %s", entity.name)
+                    result = LookupResult(
+                        match_type=MatchType.NO_MATCH,
+                        notes="Neočekávaná chyba při vyhledávání.",
+                    )
+                seen[dedup_key] = (i, result)
 
             job.results.append(result)
             await db.append_result(job.id, result, i + 1)
@@ -349,8 +360,42 @@ async def results(request: Request, job_id: str):
     })
 
 
+@app.post("/paste")
+async def paste(request: Request, paste_text: str = Form(...)):
+    """Create a batch job from pasted text (one entity per line, tab-separated columns)."""
+    lines = [l.strip() for l in paste_text.strip().splitlines() if l.strip()]
+    if not lines:
+        return _render(request, "index.html", {"upload_error": "No entities found in pasted text."}, status_code=400)
+
+    entities: list[InputEntity] = []
+    for line in lines:
+        parts = line.split("\t")
+        name = parts[0].strip()
+        if not name:
+            continue
+        entities.append(InputEntity(
+            name=name,
+            isin=parts[1].strip() or None if len(parts) > 1 else None,
+            street=parts[2].strip() or None if len(parts) > 2 else None,
+            town=parts[3].strip() or None if len(parts) > 3 else None,
+            country=parts[4].strip() or None if len(parts) > 4 else None,
+            zip_code=parts[5].strip() or None if len(parts) > 5 else None,
+        ))
+
+    if not entities:
+        return _render(request, "index.html", {"upload_error": "No valid entities found in pasted text."}, status_code=400)
+
+    job_id = str(uuid.uuid4())
+    job = Job(id=job_id, filename=f"paste_{len(entities)}_entities", entities=entities)
+    _active_jobs[job_id] = job
+    await _save_job_to_db(job)
+    asyncio.create_task(_process_job(job))
+
+    return RedirectResponse(url=f"/results/{job_id}", status_code=303)
+
+
 @app.get("/download/{job_id}")
-async def download(job_id: str, format: str = "xlsx"):
+async def download(job_id: str, format: str = "xlsx", filter: str = ""):
     job = await _get_job(job_id)
 
     if not job.results:
@@ -358,6 +403,8 @@ async def download(job_id: str, format: str = "xlsx"):
 
     rows = []
     for entity, result in zip(job.entities, job.results):
+        if filter == "unmatched" and result.match_type != MatchType.NO_MATCH:
+            continue
         rows.append({
             "Name": entity.name,
             "ISIN": entity.isin or "",
@@ -417,4 +464,106 @@ async def history(request: Request):
     sorted_jobs = [_job_from_db(r) for r in job_rows]
     return _render(request, "history.html", {
         "jobs": sorted_jobs,
+    })
+
+
+# ---------------------------------------------------------------------------
+# JSON API endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/api/lookup")
+async def api_lookup(request: Request):
+    """Single entity lookup returning JSON."""
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        return JSONResponse({"error": "name is required"}, status_code=400)
+
+    entity = InputEntity(
+        name=name,
+        isin=(body.get("isin") or "").strip() or None,
+        street=(body.get("street") or "").strip() or None,
+        town=(body.get("town") or "").strip() or None,
+        country=(body.get("country") or "").strip() or None,
+        zip_code=(body.get("zip_code") or "").strip() or None,
+    )
+
+    client = GleifClient()
+    try:
+        result = await lookup_entity(entity, client)
+    except GleifApiError:
+        return JSONResponse({"error": "GLEIF API unavailable"}, status_code=503)
+    except Exception:
+        logger.exception("API lookup failed for %s", name)
+        return JSONResponse({"error": "Internal error"}, status_code=500)
+    finally:
+        await client.close()
+
+    return JSONResponse({
+        "entity": entity.model_dump(),
+        "result": result.model_dump(),
+    })
+
+
+@app.post("/api/batch")
+async def api_batch(request: Request):
+    """Batch lookup from JSON array, returns job ID for polling."""
+    body = await request.json()
+    items = body if isinstance(body, list) else body.get("entities", [])
+    if not items:
+        return JSONResponse({"error": "Provide a list of entities"}, status_code=400)
+
+    entities: list[InputEntity] = []
+    for item in items:
+        name = (item.get("name") or "").strip()
+        if not name:
+            continue
+        entities.append(InputEntity(
+            name=name,
+            isin=(item.get("isin") or "").strip() or None,
+            street=(item.get("street") or "").strip() or None,
+            town=(item.get("town") or "").strip() or None,
+            country=(item.get("country") or "").strip() or None,
+            zip_code=(item.get("zip_code") or "").strip() or None,
+        ))
+
+    if not entities:
+        return JSONResponse({"error": "No valid entities found"}, status_code=400)
+
+    job_id = str(uuid.uuid4())
+    job = Job(id=job_id, filename=f"api_batch_{len(entities)}", entities=entities)
+    _active_jobs[job_id] = job
+    await _save_job_to_db(job)
+    asyncio.create_task(_process_job(job))
+
+    return JSONResponse({
+        "job_id": job_id,
+        "total": len(entities),
+        "status_url": f"/api/job/{job_id}",
+        "progress_url": f"/progress/{job_id}",
+    })
+
+
+@app.get("/api/job/{job_id}")
+async def api_job_status(job_id: str):
+    """Get job status and results as JSON."""
+    try:
+        job = await _get_job(job_id)
+    except HTTPException:
+        return JSONResponse({"error": "Job not found"}, status_code=404)
+
+    results_out = []
+    for i, result in enumerate(job.results):
+        entity = job.entities[i] if i < len(job.entities) else None
+        results_out.append({
+            "entity": entity.model_dump() if entity else None,
+            "result": result.model_dump(),
+        })
+
+    return JSONResponse({
+        "job_id": job.id,
+        "status": job.status,
+        "progress": job.progress,
+        "total": len(job.entities),
+        "results": results_out,
     })
