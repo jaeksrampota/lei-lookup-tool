@@ -70,7 +70,7 @@ class TestHomePage:
     async def test_home_page_renders(self, client):
         resp = await client.get("/")
         assert resp.status_code == 200
-        assert "LEI" in resp.text  # works for both CS ("LEI Vyhledavač") and EN
+        assert "LEI" in resp.text  # works for both CS ("LEI Vyhledávač") and EN
         assert 'id="lookup-form"' in resp.text
         assert 'id="drop-zone"' in resp.text
 

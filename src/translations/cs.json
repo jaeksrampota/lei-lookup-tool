@@ -1,12 +1,12 @@
 {
-    "site_title": "LEI Vyhledavač",
+    "site_title": "LEI Vyhledávač",
     "nav_lookup": "Vyhledávání",
     "nav_history": "Historie",
     "skip_to_content": "Přeskočit na hlavní obsah",
-    "footer_text": "LEI Vyhledavač — Využívá",
+    "footer_text": "LEI Vyhledávač — Využívá",
     "footer_gleif": "GLEIF API",
 
-    "hero_title": "LEI Vyhledavač",
+    "hero_title": "LEI Vyhledávač",
     "hero_subtitle": "Vyhledávání Legal Entity Identifiers v databázi GLEIF",
 
     "single_lookup_heading": "Vyhledání jednoho subjektu",
