@@ -11,6 +11,7 @@ class MatchType(str, Enum):
     HQ_MATCH = "HQ_MATCH"
     ISIN_MATCH = "ISIN_MATCH"
     ISIN_GLEIF_MATCH = "ISIN_GLEIF_MATCH"
+    NAME_ONLY_MATCH = "NAME_ONLY_MATCH"
     NO_MATCH = "NO_MATCH"
 
 

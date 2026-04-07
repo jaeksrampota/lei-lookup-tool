@@ -6,7 +6,7 @@ from typing import Optional
 from .gleif_client import GleifClient
 from .matcher import best_name_score, name_similarity, address_match_score, NAME_MATCH_THRESHOLD
 from .models import GleifCandidate, InputEntity, LookupResult, MatchType
-from .openfigi_client import resolve_isin_to_name
+from .openfigi_client import resolve_isin_to_name, resolve_isin_to_names
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,8 @@ async def resolve_via_isin(
     for candidate in isin_candidates:
         ns = best_name_score(entity, candidate)
 
-        # Skip LAPSED entities unless name match is very strong
-        if candidate.status == "LAPSED" and ns < 80:
+        # Skip LAPSED entities unless name match is reasonably strong
+        if candidate.status == "LAPSED" and ns < 60:
             logger.info("Skipping LAPSED candidate %s (name score: %.1f)", candidate.lei, ns)
             continue
 
@@ -136,9 +136,9 @@ async def resolve_via_isin(
                         ),
                     )
 
-    # Step 3d: OpenFIGI fallback — resolve ISIN to name, re-search GLEIF
-    figi_name = await resolve_isin_to_name(entity.isin)
-    if figi_name:
+    # Step 3d: OpenFIGI fallback — resolve ISIN to ALL names, re-search GLEIF
+    figi_names = await resolve_isin_to_names(entity.isin)
+    for figi_name in figi_names:
         logger.info("OpenFIGI resolved ISIN %s -> '%s', re-searching GLEIF", entity.isin, figi_name)
         figi_candidates = await client.search_by_name(figi_name, country=None, page_size=5)
 
@@ -147,7 +147,7 @@ async def resolve_via_isin(
             input_ns = best_name_score(entity, candidate)
             figi_ns = name_similarity(figi_name, candidate.legal_name)
 
-            if input_ns >= 70 and figi_ns >= 70:
+            if input_ns >= 65 and figi_ns >= 65:
                 lapsed_note = ""
                 if candidate.status == "LAPSED":
                     lapsed_note = " POZOR: LEI má status LAPSED (neudržovaný)."

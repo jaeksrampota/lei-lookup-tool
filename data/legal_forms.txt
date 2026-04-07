@@ -71,3 +71,17 @@ ltda
 eireli
 pte
 pte.
+sicav
+ucits
+etf
+fcp
+oeic
+vct
+eltif
+subfund
+sub-fund
+compartment
+teilfonds
+investicni spolecnost
+investicni fond
+podilovy fond

@@ -26,6 +26,16 @@ _RE_WHITESPACE = re.compile(r'\s+')
 _RE_COMMA_TRAIL = re.compile(r'[,.:;]+')
 _RE_ZIP_STATE = re.compile(r'^[A-Z]{2}[\s-]*')
 _RE_ZIP_PREFIX = re.compile(r'^[A-Z]{2,3}-')
+# Share class suffix patterns (e.g. "- A", "- BI EUR", "Class A", "(Acc)")
+_RE_SHARE_CLASS_SUFFIX = re.compile(
+    r'\s*-\s*[A-Z]{1,4}(?:\s+(?:SUB|VOT|ACC|DIS|INC|CAP|USD|EUR|GBP|CHF|CZK|JPY|SEK|NOK|DKK|PLN|HUF|AUD|CAD|SGD|HKD))*\s*$',
+    re.IGNORECASE,
+)
+_RE_SHARE_CLASS_WORD = re.compile(
+    r'\s+(?:class|share|trida|klasse|classe)\s+[A-Z0-9]{1,5}\b.*$',
+    re.IGNORECASE,
+)
+_RE_TRAILING_PARENS = re.compile(r'\s*\([^)]{1,20}\)\s*$')
 
 
 def _load_country_map() -> dict[str, str]:
@@ -93,6 +103,11 @@ def normalize_name(name: str) -> str:
     _load_legal_forms()
     for pattern in _LEGAL_FORM_PATTERNS:
         result = pattern.sub(' ', result)
+
+    # Strip share class suffixes (e.g. "- BI EUR", "Class A", "(Acc)")
+    result = _RE_SHARE_CLASS_SUFFIX.sub('', result)
+    result = _RE_SHARE_CLASS_WORD.sub('', result)
+    result = _RE_TRAILING_PARENS.sub('', result)
 
     # Remove diacritics
     result = unidecode(result)

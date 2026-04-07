@@ -36,12 +36,20 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
 
     iso_country = country_to_iso(entity.country)
 
+    # Derive country from ISIN prefix as fallback (first 2 chars = ISO country)
+    isin_country = entity.isin[:2].upper() if entity.isin and len(entity.isin) >= 2 else None
+
     # Step 1: Search GLEIF by name
     try:
         candidates = await client.search_by_name(entity.name, country=iso_country)
 
-        # If no results with country filter, try without
-        if not candidates and iso_country:
+        # If no results with country filter, try ISIN-derived country
+        if not candidates and isin_country and isin_country != iso_country:
+            logger.info("No results with input country %s, trying ISIN country %s...", iso_country, isin_country)
+            candidates = await client.search_by_name(entity.name, country=isin_country)
+
+        # If still no results, try without any country filter
+        if not candidates and (iso_country or isin_country):
             logger.info("No results with country filter, trying without...")
             candidates = await client.search_by_name_no_country(entity.name)
     except GleifApiError as e:
@@ -137,7 +145,8 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
             return isin_result
 
     # If we have a strong HQ match with high name confidence, report as HQ_MATCH
-    if best_hq_candidate and best_hq_score >= 50 and best_hq_name_score >= 85:
+    hq_name_threshold = 80 if (best_hq_candidate and best_hq_candidate.status == "LAPSED") else 85
+    if best_hq_candidate and best_hq_score >= 50 and best_hq_name_score >= hq_name_threshold:
         legal_addr_str = ""
         if best_hq_candidate.legal_address:
             legal_addr_str = best_hq_candidate.legal_address.format()
@@ -198,6 +207,32 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
                 f"{status_note}"
             ),
         )
+
+    # NAME_ONLY_MATCH: If exactly one candidate with very high name score and ISSUED status
+    if candidates:
+        high_name_candidates = []
+        for c in candidates:
+            ns = best_name_score(entity, c)
+            if ns >= 92 and c.status == "ISSUED":
+                high_name_candidates.append((c, ns))
+        if len(high_name_candidates) == 1:
+            cand, ns = high_name_candidates[0]
+            legal_addr_str = cand.legal_address.format() if cand.legal_address else None
+            hq_addr_str = cand.hq_address.format() if cand.hq_address else None
+            return LookupResult(
+                lei=cand.lei,
+                lei_status=cand.status,
+                match_type=MatchType.NAME_ONLY_MATCH,
+                confidence=min(55 + (ns - 92) * 2, 65),
+                gleif_legal_name=cand.legal_name,
+                gleif_legal_address=legal_addr_str,
+                gleif_hq_address=hq_addr_str,
+                notes=(
+                    f"Silná shoda názvu ({ns:.0f}%) s {cand.legal_name}, "
+                    f"ale adresa nebyla ověřena. Doporučujeme ruční ověření."
+                ),
+                match_details={"name_score": round(ns, 1)},
+            )
 
     # No match
     return LookupResult(
