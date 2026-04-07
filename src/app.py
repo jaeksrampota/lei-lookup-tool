@@ -30,6 +30,27 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
+TRANSLATIONS_DIR = BASE_DIR / "translations"
+
+# ---------------------------------------------------------------------------
+# i18n — lightweight JSON-based translations
+# ---------------------------------------------------------------------------
+TRANSLATIONS: dict[str, dict[str, str]] = {}
+
+def _load_translations():
+    for lang_file in TRANSLATIONS_DIR.glob("*.json"):
+        lang_code = lang_file.stem  # e.g. "cs", "en"
+        with open(lang_file, encoding="utf-8") as f:
+            TRANSLATIONS[lang_code] = json.load(f)
+
+_load_translations()
+
+def _get_lang(request: Request) -> str:
+    return request.cookies.get("lang", "cs")
+
+def _t(key: str, lang: str) -> str:
+    return TRANSLATIONS.get(lang, {}).get(key, key)
+
 
 @asynccontextmanager
 async def lifespan(app):
@@ -43,7 +64,14 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 def _render(request: Request, name: str, context: dict, status_code: int = 200):
     """Render a Jinja2 template, compatible with Starlette 1.0+."""
-    ctx = {**context, "request": request}
+    lang = _get_lang(request)
+    ctx = {
+        **context,
+        "request": request,
+        "lang": lang,
+        "t": lambda key: _t(key, lang),
+        "translations_json": json.dumps(TRANSLATIONS.get(lang, {}), ensure_ascii=False),
+    }
     return templates.TemplateResponse(request=request, name=name, context=ctx, status_code=status_code)
 
 
@@ -112,6 +140,15 @@ async def _save_job_to_db(job: Job):
 # Routes
 # ---------------------------------------------------------------------------
 
+@app.get("/set-language")
+async def set_language(request: Request, lang: str = "cs"):
+    lang = lang if lang in TRANSLATIONS else "cs"
+    referer = request.headers.get("referer", "/")
+    response = RedirectResponse(url=referer, status_code=303)
+    response.set_cookie("lang", lang, max_age=365 * 24 * 3600, samesite="lax")
+    return response
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return _render(request, "index.html", {})
@@ -141,8 +178,9 @@ async def lookup(
     zip_code: str = Form(""),
 ):
     if not name.strip():
+        lang = _get_lang(request)
         return _render(request, "index.html", {
-            "error": "Entity name is required.",
+            "error": _t("err_name_required", lang),
             "form": {"name": name, "country": country, "isin": isin, "street": street, "town": town, "zip_code": zip_code},
         })
 
@@ -160,14 +198,16 @@ async def lookup(
         result = await lookup_entity(entity, client)
     except GleifApiError:
         logger.exception("GLEIF API unavailable for %s", name)
+        lang = _get_lang(request)
         return _render(request, "index.html", {
-            "error": "GLEIF API is currently unavailable. Please try again later.",
+            "error": _t("err_gleif_unavailable", lang),
             "form": {"name": name, "country": country, "isin": isin, "street": street, "town": town, "zip_code": zip_code},
         })
     except Exception:
         logger.exception("Lookup failed for %s", name)
+        lang = _get_lang(request)
         return _render(request, "index.html", {
-            "error": "An unexpected error occurred during lookup. Please try again.",
+            "error": _t("err_unexpected", lang),
             "form": {"name": name, "country": country, "isin": isin, "street": street, "town": town, "zip_code": zip_code},
         })
     finally:
@@ -365,7 +405,8 @@ async def paste(request: Request, paste_text: str = Form(...)):
     """Create a batch job from pasted text (one entity per line, tab-separated columns)."""
     lines = [l.strip() for l in paste_text.strip().splitlines() if l.strip()]
     if not lines:
-        return _render(request, "index.html", {"upload_error": "No entities found in pasted text."}, status_code=400)
+        lang = _get_lang(request)
+        return _render(request, "index.html", {"upload_error": _t("err_no_entities_pasted", lang)}, status_code=400)
 
     entities: list[InputEntity] = []
     for line in lines:
@@ -383,7 +424,8 @@ async def paste(request: Request, paste_text: str = Form(...)):
         ))
 
     if not entities:
-        return _render(request, "index.html", {"upload_error": "No valid entities found in pasted text."}, status_code=400)
+        lang = _get_lang(request)
+        return _render(request, "index.html", {"upload_error": _t("err_no_valid_entities", lang)}, status_code=400)
 
     job_id = str(uuid.uuid4())
     job = Job(id=job_id, filename=f"paste_{len(entities)}_entities", entities=entities)

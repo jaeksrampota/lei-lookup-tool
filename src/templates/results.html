@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Results - {{ job.filename }} - LEI Lookup Tool{% endblock %}
+{% block title %}{{ t('results_page_title') }} - {{ job.filename }} - {{ t('site_title') }}{% endblock %}
 
 {% block content %}
 <div class="results-header">
-    <h1>Results: {{ job.filename }}</h1>
-    <p class="job-meta">{{ job.entities | length }} entities &middot; Job {{ job.id[:8] }}</p>
+    <h1>{{ t('results_header') }}: {{ job.filename }}</h1>
+    <p class="job-meta">{{ job.entities | length }} {{ t('results_entities') }} &middot; {{ t('results_job') }} {{ job.id[:8] }}</p>
 </div>
 
 {# ---- Match Type Summary Badges ---- #}
@@ -20,12 +20,12 @@
 {# ---- Progress Section ---- #}
 <div class="progress-section" id="progress-section" {% if job.status == 'complete' %}hidden{% endif %}>
     <div class="progress-info">
-        <span id="progress-text">Processing...</span>
+        <span id="progress-text">{{ t('processing_text') }}</span>
         <span id="progress-time" class="elapsed-time"></span>
     </div>
     <div class="progress-bar-container" role="progressbar"
          aria-valuenow="{{ job.progress }}" aria-valuemin="0" aria-valuemax="{{ job.entities | length }}"
-         aria-label="Batch processing progress">
+         aria-label="{{ t('progress_label') }}">
         <div class="progress-bar" id="progress-bar" style="width: {{ (job.progress / job.entities|length * 100) if job.entities else 0 }}%"></div>
     </div>
     <p id="progress-entity" class="progress-entity"></p>
@@ -34,23 +34,23 @@
 {# ---- Error Section ---- #}
 {% if job.status == 'error' %}
 <div class="alert alert-error" role="alert">
-    Processing error: {{ job.error_message }}
+    {{ t('processing_error') }}: {{ job.error_message }}
 </div>
 {% endif %}
 
 {# ---- Download Toolbar ---- #}
 <div class="download-toolbar" id="download-toolbar" {% if job.status != 'complete' %}hidden{% endif %}>
-    <a href="/download/{{ job.id }}?format=xlsx" class="btn btn-small" title="Download as Excel">Excel (.xlsx)</a>
-    <a href="/download/{{ job.id }}?format=csv" class="btn btn-small" title="Download as CSV">CSV</a>
-    <a href="/download/{{ job.id }}?format=json" class="btn btn-small" title="Download as JSON">JSON</a>
+    <a href="/download/{{ job.id }}?format=xlsx" class="btn btn-small" title="{{ t('download_as_excel') }}">{{ t('btn_download_excel_ext') }}</a>
+    <a href="/download/{{ job.id }}?format=csv" class="btn btn-small" title="{{ t('download_as_csv') }}">{{ t('btn_download_csv') }}</a>
+    <a href="/download/{{ job.id }}?format=json" class="btn btn-small" title="{{ t('download_as_json') }}">{{ t('btn_download_json') }}</a>
     {% if match_counts.get('NO_MATCH', 0) > 0 %}
-    <a href="/download/{{ job.id }}?format=xlsx&filter=unmatched" class="btn btn-small btn-outline" title="Download unmatched entities only">Unmatched only (.xlsx)</a>
+    <a href="/download/{{ job.id }}?format=xlsx&filter=unmatched" class="btn btn-small btn-outline" title="{{ t('download_unmatched_title') }}">{{ t('btn_download_unmatched') }}</a>
     {% endif %}
 </div>
 
 {# ---- Filter/Search ---- #}
 <div class="table-controls">
-    <input type="text" id="table-filter" placeholder="Filter results..." aria-label="Filter results table">
+    <input type="text" id="table-filter" placeholder="{{ t('filter_placeholder') }}" aria-label="{{ t('filter_placeholder') }}">
 </div>
 
 {# ---- Results Table ---- #}
@@ -58,14 +58,14 @@
     <table class="results-table" id="results-table">
         <thead>
             <tr>
-                <th scope="col">#</th>
-                <th scope="col" class="sortable" data-sort="name">Name</th>
-                <th scope="col">LEI</th>
-                <th scope="col">Status</th>
-                <th scope="col" class="sortable" data-sort="match">Match Type</th>
-                <th scope="col" class="sortable" data-sort="confidence">Confidence</th>
-                <th scope="col">GLEIF Name</th>
-                <th scope="col">Notes</th>
+                <th scope="col">{{ t('col_number') }}</th>
+                <th scope="col" class="sortable" data-sort="name">{{ t('col_name') }}</th>
+                <th scope="col">{{ t('col_lei') }}</th>
+                <th scope="col">{{ t('col_status') }}</th>
+                <th scope="col" class="sortable" data-sort="match">{{ t('col_match_type') }}</th>
+                <th scope="col" class="sortable" data-sort="confidence">{{ t('col_confidence') }}</th>
+                <th scope="col">{{ t('col_gleif_name') }}</th>
+                <th scope="col">{{ t('col_notes') }}</th>
             </tr>
         </thead>
         <tbody id="results-tbody">
@@ -73,7 +73,7 @@
             <tr>
                 <td>{{ loop.index }}</td>
                 <td class="name-cell">{{ entity.name }}</td>
-                <td class="lei-cell">{{ result.lei or '' }}{% if result.lei %} <button class="btn-copy" data-lei="{{ result.lei }}" title="Copy LEI">&#x1f4cb;</button>{% endif %}</td>
+                <td class="lei-cell">{{ result.lei or '' }}{% if result.lei %} <button class="btn-copy" data-lei="{{ result.lei }}" title="{{ t('copy_lei') }}">&#x1f4cb;</button>{% endif %}</td>
                 <td>{{ result.lei_status or '' }}</td>
                 <td><span class="badge badge-{{ result.match_type.value | lower }}">{{ result.match_type.value }}</span></td>
                 <td class="confidence-cell confidence-{{ 'high' if result.confidence >= 85 else ('medium' if result.confidence >= 65 else 'low') }}"
@@ -90,7 +90,7 @@
 
 {% if not paired and job.status == 'complete' %}
 <div class="empty-state">
-    <p>No results to display.</p>
+    <p>{{ t('empty_results') }}</p>
 </div>
 {% endif %}
 

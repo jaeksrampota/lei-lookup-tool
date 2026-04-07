@@ -1,5 +1,10 @@
 /* LEI Lookup Tool - Frontend JavaScript */
 
+/* ===== i18n helper ===== */
+function t(key) {
+    return (window.TRANSLATIONS && window.TRANSLATIONS[key]) || key;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     initCountryAutocomplete();
     initNavToggle();
@@ -104,7 +109,7 @@ function handleFileSelected(file) {
     var ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
     if (allowed.indexOf(ext) === -1) {
-        showToast('Unsupported file type. Please use .xlsx, .csv, or .docx', 'error');
+        showToast(t('js_unsupported_file'), 'error');
         return;
     }
 
@@ -132,7 +137,7 @@ function initLookupForm() {
         var text = btn.querySelector('.btn-text');
         btn.disabled = true;
         if (spinner) spinner.hidden = false;
-        if (text) text.textContent = 'Searching...';
+        if (text) text.textContent = t('js_searching');
     });
 }
 
@@ -159,9 +164,9 @@ function connectProgress(jobId, totalEntities) {
             var remaining = Math.max(0, (totalEntities - resultTimestamps.length) * avgMs / 1000);
             var rm = Math.floor(remaining / 60);
             var rs = Math.floor(remaining % 60);
-            etaStr = ' \u00b7 ~' + (rm > 0 ? rm + 'm ' : '') + rs + 's remaining';
+            etaStr = ' \u00b7 ~' + (rm > 0 ? rm + 'm ' : '') + rs + 's ' + t('js_remaining');
         } else if (resultTimestamps.length > 0) {
-            etaStr = ' \u00b7 Calculating...';
+            etaStr = ' \u00b7 ' + t('js_calculating');
         }
         if (progressTime) {
             progressTime.textContent = (min > 0 ? min + 'm ' : '') + sec + 's' + etaStr;
@@ -178,7 +183,7 @@ function connectProgress(jobId, totalEntities) {
             var pct = (data.current / data.total * 100);
             progressBar.style.width = pct + '%';
             progressBar.parentElement.setAttribute('aria-valuenow', data.current);
-            progressText.textContent = 'Processing ' + data.current + ' of ' + data.total;
+            progressText.textContent = t('js_processing_of') + ' ' + data.current + ' ' + t('js_of') + ' ' + data.total;
             progressEntity.textContent = data.entity_name;
         }
 
@@ -206,7 +211,7 @@ function connectProgress(jobId, totalEntities) {
             clearInterval(timerInterval);
             progressSection.hidden = true;
             if (downloadToolbar) downloadToolbar.hidden = false;
-            showToast('Processing complete! ' + data.total + ' entities processed.', 'success');
+            showToast(t('js_processing_complete') + ' ' + data.total, 'success');
             source.close();
             /* Reload to get full server-rendered results with all columns */
             setTimeout(function () { window.location.reload(); }, 500);
@@ -214,9 +219,9 @@ function connectProgress(jobId, totalEntities) {
 
         if (data.type === 'error') {
             clearInterval(timerInterval);
-            progressText.textContent = 'Error: ' + data.message;
+            progressText.textContent = t('js_error') + ': ' + data.message;
             progressBar.style.background = 'var(--color-red)';
-            showToast('Processing error: ' + data.message, 'error');
+            showToast(t('js_processing_error') + ': ' + data.message, 'error');
             source.close();
         }
     };
@@ -326,9 +331,9 @@ function initCopyButtons() {
         var lei = btn.getAttribute('data-lei');
         if (!lei) return;
         navigator.clipboard.writeText(lei).then(function () {
-            showToast('Copied: ' + lei, 'success');
+            showToast(t('js_copied') + ': ' + lei, 'success');
         }).catch(function () {
-            showToast('Copy failed', 'error');
+            showToast(t('js_copy_failed'), 'error');
         });
     });
 }

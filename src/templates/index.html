@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}LEI Lookup Tool{% endblock %}
+{% block title %}{{ t('site_title') }}{% endblock %}
 
 {% block content %}
 <div class="hero">
-    <h1>LEI Lookup Tool</h1>
-    <p class="subtitle">Search for Legal Entity Identifiers via the GLEIF database</p>
+    <h1>{{ t('hero_title') }}</h1>
+    <p class="subtitle">{{ t('hero_subtitle') }}</p>
 </div>
 
 <div class="two-column">
     {# ---- Single Lookup Form ---- #}
     <section class="card" aria-labelledby="lookup-heading">
-        <h2 id="lookup-heading">Single Entity Lookup</h2>
+        <h2 id="lookup-heading">{{ t('single_lookup_heading') }}</h2>
 
         {% if error %}
         <div class="alert alert-error" role="alert">{{ error }}</div>
@@ -19,49 +19,49 @@
 
         <form id="lookup-form" method="post" action="/lookup">
             <div class="form-group">
-                <label for="name">Entity Name <span class="required" aria-label="required">*</span></label>
+                <label for="name">{{ t('label_name') }} <span class="required" aria-label="{{ t('required') }}">*</span></label>
                 <input type="text" id="name" name="name" required
-                       placeholder="e.g. CAIAC Fund Management AG"
+                       placeholder="{{ t('placeholder_name') }}"
                        value="{{ form.name if form else '' }}"
                        autocomplete="organization">
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="country">Country</label>
+                    <label for="country">{{ t('label_country') }}</label>
                     <input type="text" id="country" name="country" list="country-list"
-                           placeholder="e.g. Česká republika"
+                           placeholder="{{ t('placeholder_country') }}"
                            value="{{ form.country if form else '' }}">
                     <datalist id="country-list"></datalist>
                 </div>
                 <div class="form-group">
-                    <label for="isin">ISIN</label>
+                    <label for="isin">{{ t('label_isin') }}</label>
                     <input type="text" id="isin" name="isin"
-                           placeholder="e.g. CZ0009010468"
+                           placeholder="{{ t('placeholder_isin') }}"
                            value="{{ form.isin if form else '' }}">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="street">Street</label>
+                    <label for="street">{{ t('label_street') }}</label>
                     <input type="text" id="street" name="street"
-                           placeholder="e.g. Kotrčova 304/2"
+                           placeholder="{{ t('placeholder_street') }}"
                            value="{{ form.street if form else '' }}">
                 </div>
                 <div class="form-group">
-                    <label for="town">Town</label>
+                    <label for="town">{{ t('label_town') }}</label>
                     <input type="text" id="town" name="town"
-                           placeholder="e.g. Praha"
+                           placeholder="{{ t('placeholder_town') }}"
                            value="{{ form.town if form else '' }}">
                 </div>
             </div>
             <div class="form-group" style="max-width:200px">
-                <label for="zip_code">ZIP Code</label>
+                <label for="zip_code">{{ t('label_zip') }}</label>
                 <input type="text" id="zip_code" name="zip_code"
-                       placeholder="e.g. 50301"
+                       placeholder="{{ t('placeholder_zip') }}"
                        value="{{ form.zip_code if form else '' }}">
             </div>
             <button type="submit" class="btn btn-primary" id="lookup-submit">
-                <span class="btn-text">Search LEI</span>
+                <span class="btn-text">{{ t('btn_search') }}</span>
                 <span class="spinner" hidden aria-hidden="true"></span>
             </button>
         </form>
@@ -69,22 +69,22 @@
         {# ---- Lookup Result ---- #}
         {% if result %}
         <div class="result-card" id="lookup-result">
-            <h3>Result</h3>
+            <h3>{{ t('result_heading') }}</h3>
             <div class="result-grid">
                 <div class="result-item">
-                    <span class="result-label">LEI</span>
-                    <span class="result-value lei-value">{{ result.lei or 'NOT FOUND' }}{% if result.lei %} <button class="btn-copy" data-lei="{{ result.lei }}" title="Copy LEI to clipboard">&#x1f4cb;</button>{% endif %}</span>
+                    <span class="result-label">{{ t('result_lei') }}</span>
+                    <span class="result-value lei-value">{{ result.lei or t('result_not_found') }}{% if result.lei %} <button class="btn-copy" data-lei="{{ result.lei }}" title="{{ t('copy_lei_title') }}">&#x1f4cb;</button>{% endif %}</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Status</span>
-                    <span class="result-value">{{ result.lei_status or 'N/A' }}</span>
+                    <span class="result-label">{{ t('result_status') }}</span>
+                    <span class="result-value">{{ result.lei_status or t('result_na') }}</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Match Type</span>
+                    <span class="result-label">{{ t('result_match_type') }}</span>
                     <span class="badge badge-{{ result.match_type.value | lower }}">{{ result.match_type.value }}</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Confidence</span>
+                    <span class="result-label">{{ t('result_confidence') }}</span>
                     <span class="confidence confidence-{{ 'high' if result.confidence >= 85 else ('medium' if result.confidence >= 65 else 'low') }}"
                           {% if result.match_details %}title="Name: {{ result.match_details.name_score }}%, City: {{ result.match_details.city_score }}%, Street: {{ result.match_details.street_score }}%, ZIP: {{ result.match_details.zip_score }}%"{% endif %}>
                         {{ "%.1f" | format(result.confidence) }}%
@@ -95,32 +95,32 @@
                 </div>
                 {% if result.gleif_legal_name %}
                 <div class="result-item full-width">
-                    <span class="result-label">GLEIF Legal Name</span>
+                    <span class="result-label">{{ t('result_gleif_name') }}</span>
                     <span class="result-value">{{ result.gleif_legal_name }}</span>
                 </div>
                 {% endif %}
                 {% if result.gleif_legal_address %}
                 <div class="result-item full-width">
-                    <span class="result-label">Legal Address</span>
+                    <span class="result-label">{{ t('result_legal_address') }}</span>
                     <span class="result-value">{{ result.gleif_legal_address }}</span>
                 </div>
                 {% endif %}
                 {% if result.gleif_hq_address %}
                 <div class="result-item full-width">
-                    <span class="result-label">HQ Address</span>
+                    <span class="result-label">{{ t('result_hq_address') }}</span>
                     <span class="result-value">{{ result.gleif_hq_address }}</span>
                 </div>
                 {% endif %}
                 <div class="result-item full-width">
-                    <span class="result-label">Notes</span>
+                    <span class="result-label">{{ t('result_notes') }}</span>
                     <span class="result-value notes">{{ result.notes }}</span>
                 </div>
             </div>
             {% if job_id %}
             <div class="download-bar">
-                <a href="/download/{{ job_id }}?format=xlsx" class="btn btn-small" title="Download as Excel">Excel</a>
-                <a href="/download/{{ job_id }}?format=csv" class="btn btn-small" title="Download as CSV">CSV</a>
-                <a href="/download/{{ job_id }}?format=json" class="btn btn-small" title="Download as JSON">JSON</a>
+                <a href="/download/{{ job_id }}?format=xlsx" class="btn btn-small" title="{{ t('download_as_excel') }}">{{ t('btn_download_excel') }}</a>
+                <a href="/download/{{ job_id }}?format=csv" class="btn btn-small" title="{{ t('download_as_csv') }}">{{ t('btn_download_csv') }}</a>
+                <a href="/download/{{ job_id }}?format=json" class="btn btn-small" title="{{ t('download_as_json') }}">{{ t('btn_download_json') }}</a>
             </div>
             {% endif %}
         </div>
@@ -129,8 +129,8 @@
 
     {# ---- Batch Upload ---- #}
     <section class="card" aria-labelledby="upload-heading">
-        <h2 id="upload-heading">Batch Upload</h2>
-        <p>Upload a file with multiple entities for bulk lookup.</p>
+        <h2 id="upload-heading">{{ t('batch_heading') }}</h2>
+        <p>{{ t('batch_description') }}</p>
 
         {% if upload_error %}
         <div class="alert alert-error" role="alert">{{ upload_error }}</div>
@@ -142,35 +142,35 @@
                     <svg class="drop-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                     </svg>
-                    <p>Drop <strong>.xlsx</strong>, <strong>.csv</strong>, or <strong>.docx</strong> here</p>
-                    <p class="drop-hint">or click to browse</p>
+                    <p>{{ t('drop_zone_text_pre') }}<strong>.xlsx</strong>{{ t('drop_zone_text_mid') }}<strong>.csv</strong>{{ t('drop_zone_text_or') }}<strong>.docx</strong></p>
+                    <p class="drop-hint">{{ t('drop_zone_hint') }}</p>
                 </div>
                 <input type="file" id="file-input" name="file"
                        accept=".xlsx,.csv,.docx"
-                       aria-label="Choose file to upload">
+                       aria-label="{{ t('file_input_label') }}">
             </div>
             <div class="file-info" id="file-info" hidden>
                 <span id="file-name"></span>
-                <button type="button" id="file-clear" class="btn-icon" aria-label="Remove selected file">&times;</button>
+                <button type="button" id="file-clear" class="btn-icon" aria-label="{{ t('btn_clear_file') }}">&times;</button>
             </div>
             <button type="submit" class="btn btn-primary" id="upload-submit" disabled>
-                Upload &amp; Process
+                {{ t('btn_upload') }}
             </button>
         </form>
 
         <div class="upload-formats">
-            <h3>Expected File Format</h3>
-            <p class="format-hint">Your file should have <strong>6 columns</strong> in this order (header names don't matter):</p>
+            <h3>{{ t('format_heading') }}</h3>
+            <p class="format-hint">{{ t('format_hint_pre') }}<strong>{{ t('format_hint_cols') }}</strong>{{ t('format_hint_post') }}</p>
             <div class="example-table-wrapper">
                 <table class="example-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>ISIN</th>
-                            <th>Street</th>
-                            <th>Town</th>
-                            <th>Country</th>
-                            <th>ZIP</th>
+                            <th>{{ t('col_name') }}</th>
+                            <th>{{ t('col_isin') }}</th>
+                            <th>{{ t('col_street') }}</th>
+                            <th>{{ t('col_town') }}</th>
+                            <th>{{ t('col_country') }}</th>
+                            <th>{{ t('col_zip') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -193,28 +193,28 @@
                     </tbody>
                 </table>
             </div>
-            <p class="format-note">Only <strong>Name</strong> is required. Other columns improve matching accuracy.</p>
+            <p class="format-note">{{ t('format_note_pre') }}<strong>{{ t('format_note_name') }}</strong>{{ t('format_note_post') }}</p>
             <details class="supported-formats">
-                <summary>Supported file types</summary>
+                <summary>{{ t('supported_formats_summary') }}</summary>
                 <ul>
-                    <li><strong>.xlsx</strong> &mdash; Excel spreadsheet</li>
-                    <li><strong>.csv</strong> &mdash; Comma or semicolon delimited</li>
-                    <li><strong>.docx</strong> &mdash; Word table or one name per line</li>
+                    <li><strong>.xlsx</strong> &mdash; {{ t('format_xlsx') }}</li>
+                    <li><strong>.csv</strong> &mdash; {{ t('format_csv') }}</li>
+                    <li><strong>.docx</strong> &mdash; {{ t('format_docx') }}</li>
                 </ul>
             </details>
         </div>
 
         <hr class="divider">
 
-        <h3 id="paste-heading">Quick Paste</h3>
-        <p>Paste entity names directly (one per line). Use tabs to add columns: Name, ISIN, Street, Town, Country, ZIP.</p>
+        <h3 id="paste-heading">{{ t('paste_heading') }}</h3>
+        <p>{{ t('paste_description') }}</p>
         <form id="paste-form" method="post" action="/paste">
             <div class="form-group">
                 <textarea id="paste-text" name="paste_text" rows="6"
                           placeholder="CAIAC Fund Management AG&#10;Polar Capital LLP&#10;Morgan Stanley Direct Lending Fund"></textarea>
             </div>
             <button type="submit" class="btn btn-primary" id="paste-submit" disabled>
-                Lookup Pasted Entities
+                {{ t('btn_paste_lookup') }}
             </button>
         </form>
     </section>

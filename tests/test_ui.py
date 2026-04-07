@@ -164,11 +164,13 @@ class TestPageLoad:
     def test_05_nav_link_to_history(self, page, server_url):
         page.click('a[href="/history"]')
         page.wait_for_url("**/history")
-        assert "History" in page.content()
+        content = page.content().lower()
+        assert "histor" in content  # works for both CS ("Historie") and EN ("History")
 
     def test_06_history_page_loads(self, page, server_url):
         page.goto(server_url + "/history")
-        assert page.locator("h1").inner_text() == "Lookup History"
+        h1 = page.locator("h1").inner_text().lower()
+        assert "histor" in h1  # works for both CS and EN
 
     def test_07_404_page(self, browser, server_url):
         ctx = browser.new_context()
@@ -846,7 +848,7 @@ class TestVisualPolish:
 
     def test_92_lookup_button_text(self, page):
         text = page.locator("#lookup-submit .btn-text").inner_text()
-        assert "Search" in text or "Lookup" in text
+        assert "Search" in text or "Lookup" in text or "LEI" in text  # CS uses "Vyhledat LEI"
 
     def test_93_footer_has_gleif_link(self, page):
         footer = page.locator("footer")

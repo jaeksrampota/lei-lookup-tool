@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}History - LEI Lookup Tool{% endblock %}
+{% block title %}{{ t('nav_history') }} - {{ t('site_title') }}{% endblock %}
 
 {% block content %}
-<h1>Lookup History</h1>
+<h1>{{ t('history_heading') }}</h1>
 
 {% if jobs %}
 <div class="table-wrapper">
     <table class="results-table">
         <thead>
             <tr>
-                <th scope="col">File</th>
-                <th scope="col">Entities</th>
-                <th scope="col">Status</th>
-                <th scope="col">Created</th>
-                <th scope="col">Actions</th>
+                <th scope="col">{{ t('col_file') }}</th>
+                <th scope="col">{{ t('col_entities') }}</th>
+                <th scope="col">{{ t('col_status') }}</th>
+                <th scope="col">{{ t('col_created') }}</th>
+                <th scope="col">{{ t('col_actions') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -27,9 +27,9 @@
                 </td>
                 <td class="timestamp" data-ts="{{ job.created_at }}"></td>
                 <td>
-                    <a href="/results/{{ job.id }}" class="btn btn-small">View</a>
+                    <a href="/results/{{ job.id }}" class="btn btn-small">{{ t('btn_view') }}</a>
                     {% if job.status == 'complete' %}
-                    <a href="/download/{{ job.id }}?format=xlsx" class="btn btn-small" title="Download Excel">Download</a>
+                    <a href="/download/{{ job.id }}?format=xlsx" class="btn btn-small" title="{{ t('download_excel_title') }}">{{ t('btn_download') }}</a>
                     {% endif %}
                 </td>
             </tr>
@@ -39,7 +39,7 @@
 </div>
 {% else %}
 <div class="empty-state">
-    <p>No lookups yet. <a href="/">Start a new lookup</a>.</p>
+    <p>{{ t('empty_history') }} <a href="/">{{ t('start_new_lookup') }}</a>.</p>
 </div>
 {% endif %}
 {% endblock %}

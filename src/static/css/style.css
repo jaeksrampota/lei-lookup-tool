@@ -123,6 +123,27 @@ header {
     outline-offset: 2px;
 }
 
+.lang-switch {
+    margin-left: 8px;
+}
+
+.btn-lang {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--color-navy) !important;
+    background: rgba(255,255,255,0.9);
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: background var(--transition);
+}
+
+.btn-lang:hover {
+    background: white;
+}
+
 .nav-toggle {
     display: none;
     background: none;

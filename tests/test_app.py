@@ -70,7 +70,7 @@ class TestHomePage:
     async def test_home_page_renders(self, client):
         resp = await client.get("/")
         assert resp.status_code == 200
-        assert "LEI Lookup Tool" in resp.text
+        assert "LEI" in resp.text  # works for both CS ("LEI Vyhledavač") and EN
         assert 'id="lookup-form"' in resp.text
         assert 'id="drop-zone"' in resp.text
 
@@ -251,7 +251,7 @@ class TestOther:
     async def test_history_page(self, client):
         resp = await client.get("/history")
         assert resp.status_code == 200
-        assert "History" in resp.text
+        assert "history" in resp.text.lower()  # works for both CS ("Historie") and EN
 
     async def test_results_page_with_job(self, client):
         import time as _time
