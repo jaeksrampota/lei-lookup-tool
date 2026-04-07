@@ -6,7 +6,8 @@ __pycache__/
 dist/
 build/
 .env
-results.xlsx
+results*.xlsx
+JISIFE_*.xlsx
 data/lei_lookup.db
 data/cache.db
 tests/_test_*.db
