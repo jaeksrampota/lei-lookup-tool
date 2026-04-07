@@ -68,6 +68,8 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
     best_hq_candidate: Optional[GleifCandidate] = None
     best_hq_score: float = 0.0
     best_hq_name_score: float = 0.0
+    best_name_candidate: Optional[GleifCandidate] = None
+    best_name_score_val: float = 0.0
 
     for candidate in candidates:
         ns = best_name_score(entity, candidate)
@@ -113,6 +115,11 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
             best_hq_score = hq_score
             best_hq_name_score = ns
 
+        # Track the best name-matched candidate (regardless of address)
+        if ns >= 85 and ns > best_name_score_val:
+            best_name_candidate = candidate
+            best_name_score_val = ns
+
     # If we have a full match, return it
     if best_full_match:
         logger.info("FULL_MATCH found: %s", best_full_match.lei)
@@ -120,13 +127,51 @@ async def lookup_entity(entity: InputEntity, client: GleifClient) -> LookupResul
 
     # Step 4: Try ISIN resolution (if HQ matched or no match at all)
     if entity.isin:
-        isin_result = await resolve_via_isin(entity, client, hq_candidate=best_hq_candidate)
+        isin_result = await resolve_via_isin(
+            entity, client,
+            hq_candidate=best_hq_candidate,
+            name_candidate=best_name_candidate,
+        )
         if isin_result:
             logger.info("ISIN resolution succeeded: %s -> %s", entity.isin, isin_result.lei)
             return isin_result
 
-    # If we have an HQ match but no ISIN confirmation, report as NO_MATCH
-    # per requirements: HQ-only matches without ISIN verification should not be assigned
+    # If we have a strong HQ match with high name confidence, report as HQ_MATCH
+    if best_hq_candidate and best_hq_score >= 50 and best_hq_name_score >= 85:
+        legal_addr_str = ""
+        if best_hq_candidate.legal_address:
+            legal_addr_str = best_hq_candidate.legal_address.format()
+        hq_addr_str = ""
+        if best_hq_candidate.hq_address:
+            hq_addr_str = best_hq_candidate.hq_address.format()
+
+        confidence = min(50 + best_hq_name_score * 0.1 + best_hq_score * 0.1, 75)
+        lapsed_note = ""
+        if best_hq_candidate.status == "LAPSED":
+            confidence = min(confidence, 65)
+            lapsed_note = " POZOR: LEI má status LAPSED (neudržovaný)."
+
+        return LookupResult(
+            lei=best_hq_candidate.lei,
+            lei_status=best_hq_candidate.status,
+            match_type=MatchType.HQ_MATCH,
+            confidence=confidence,
+            gleif_legal_name=best_hq_candidate.legal_name,
+            gleif_legal_address=legal_addr_str or None,
+            gleif_hq_address=hq_addr_str or None,
+            notes=(
+                f"Název odpovídá ({best_hq_candidate.legal_name}), "
+                f"adresa se shoduje pouze s headquarters ({hq_addr_str}). "
+                f"Legal address: {legal_addr_str}. "
+                f"LEI přiřazen na základě silné shody názvu a HQ adresy.{lapsed_note}"
+            ),
+            match_details={
+                "name_score": round(best_hq_name_score, 1),
+                "hq_address_score": round(best_hq_score, 1),
+            },
+        )
+
+    # If we have a weaker HQ match, report as NO_MATCH with details
     if best_hq_candidate and best_hq_score >= 40:
         legal_addr_str = ""
         if best_hq_candidate.legal_address:
