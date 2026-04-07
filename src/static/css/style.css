@@ -436,6 +436,65 @@ footer a:hover {
     color: var(--color-accent);
 }
 
+.format-hint {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 12px;
+}
+
+.format-note {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.example-table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 4px;
+}
+
+.example-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}
+
+.example-table th {
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 600;
+    padding: 6px 10px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.example-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.example-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.example-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.supported-formats {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+}
+
+.supported-formats summary {
+    cursor: pointer;
+    font-weight: 500;
+    padding: 4px 0;
+}
+
 /* ===== Result Card ===== */
 .result-card {
     margin-top: 24px;

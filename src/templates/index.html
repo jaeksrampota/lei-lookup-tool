@@ -159,12 +159,49 @@
         </form>
 
         <div class="upload-formats">
-            <h3>Supported Formats</h3>
-            <ul>
-                <li><strong>Excel (.xlsx)</strong> &mdash; 6 columns: Name, ISIN, Street, Town, Country, ZIP</li>
-                <li><strong>CSV (.csv)</strong> &mdash; Same columns, comma or semicolon delimited</li>
-                <li><strong>Word (.docx)</strong> &mdash; Table with entity data or one name per line</li>
-            </ul>
+            <h3>Expected File Format</h3>
+            <p class="format-hint">Your file should have <strong>6 columns</strong> in this order (header names don't matter):</p>
+            <div class="example-table-wrapper">
+                <table class="example-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ISIN</th>
+                            <th>Street</th>
+                            <th>Town</th>
+                            <th>Country</th>
+                            <th>ZIP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>CAIAC Fund Management AG</td>
+                            <td>AT0000A1TBC2</td>
+                            <td>Kundmanngasse 21</td>
+                            <td>Wien</td>
+                            <td>Austria</td>
+                            <td>1030</td>
+                        </tr>
+                        <tr>
+                            <td>Polar Capital LLP</td>
+                            <td></td>
+                            <td>16 Palace Street</td>
+                            <td>London</td>
+                            <td>United Kingdom</td>
+                            <td>SW1E 5JD</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="format-note">Only <strong>Name</strong> is required. Other columns improve matching accuracy.</p>
+            <details class="supported-formats">
+                <summary>Supported file types</summary>
+                <ul>
+                    <li><strong>.xlsx</strong> &mdash; Excel spreadsheet</li>
+                    <li><strong>.csv</strong> &mdash; Comma or semicolon delimited</li>
+                    <li><strong>.docx</strong> &mdash; Word table or one name per line</li>
+                </ul>
+            </details>
         </div>
 
         <hr class="divider">
